@@ -201,3 +201,161 @@ STEP-4: IMPORT THE CONNECTDB
     - import connectDB from "./db/db.js";
 STEP-5: CALL THE CONNECTDB 
     - connectDB(); 
+
+**** USING EXPRESS **** 
+    - app.js 
+STEP-1: IMPORT EXPRESS 
+    - import express from "express";
+STEP-2: CREATE APP 
+    - const app = express() 
+STEP-3: EXPORT APP 
+    - export { app }; 
+
+**** USING APP INTO INDEX FILE 
+    - index.js 
+STEP-1: IMPORT APP 
+    - import { app } from "./app.js";
+STEP-2: ADD THEN & CATCH AFTER CONNECTDB 
+    - connectDB()
+    .then()
+    .catch() 
+STEP-3: HANDLE ERROR 
+    - catch 
+        - console.log("MongoDB connection failed !!! ", err); 
+STEP-4: START THE APP 
+    - then 
+        - app.listen(process.env.PORT || 8000, () => {
+            console.log(`Server is running at port : ${process.env.PORT}`);
+          }); 
+STEP-5: SEND ERROR MESSAGE 
+    - then 
+        - app.on("error", (error) => {
+            console.log("ERROR", error);
+            throw error;
+          });
+
+*** INSTALL COOKIE-PARSER AND CORS ***
+    - Open the terminal,  type the code & press Enter 
+        - npm i cookie-parser cors
+*** USING COOKIE-PARSER AND CORS *** 
+    - app.js 
+STEP-1: IMPORT COOKIE-PARSER AND CORS 
+    - import cors from "cors"
+    - import cookieParser from "cookie-parser";
+STEP-2: CONFIGURE THE CORS 
+    - app.use(cors()) 
+    **Note: Whenever you use a middleware, you should to use "app.use()"
+STEP-3: CREATE OPTION FOR CORS 
+    - cors({
+        origin: process.env.CORS_ORIGIN,
+        credentials: true,
+      }) 
+STEP-4: CREATE CORS_ORIGIN AT ENV FILE 
+    - CORS_ORIGIN=* 
+STEP-5: MAKE CONFIGURATION FOR JSON FILE LIMIT  
+    - app.use(express.json({ limit: "16kb" })); 
+STEP-6: MAKE CONFIGURATION FOR URL ENCODE 
+    - app.use(express.urlencoded({ extended: true, limit: "16kb" }));
+    **Note: Here, extended: true is used for nested object, that means you can make objects under an object. 
+STEP-7: MAKE CONFIGURATION FOR PUBLIC FOLDER 
+    - app.use(express.static("public"));
+STEP-8: MAKE CONFIGURATION FOR COOKIE PARSER 
+    - app.use(cookieParser());
+
+    **** CREATING UTILS **** 
+*** CREATE ASYNCHANDLER AS A WRAPPING FUNCTION *** 
+STEP-1: CREATE FILE 
+    - utils 
+      - asyncHandler.js 
+STEP-2: CREATE A FUNCTION AND EXPORT IT 
+    - asyncHandler.js 
+      - const asyncHandler = () => {};
+      - export { asyncHandler };
+STEP-3: CREATE A HIGHER ORDER ASYNCRONUS FUNCTION AS A PARAMETER 
+    - const asyncHandler = (fn) => async (req, res, next) => {}
+    **Note: This function is combined for 3 functions 
+    - const asyncHandler = () => {}
+    - const asyncHandler = (fn) => () => {}
+    - const asyncHandler = (fn) => async () => {}
+    A function can take 4 parameter(error, request, response, next). next is used for using middleware. 
+STEP-4: CREATE TRY CATCH BLOCK 
+    - try {
+        
+    } catch (error) {
+        
+    }
+STEP-5: HANDLE THE ERROR 
+    - catch (error) {
+        res.status(error.code || 500).json({
+          success: false,
+          message: error.message,
+        });
+      }
+    **Note: If the user pass an error code, it will send the code or send 500. We will have a json response also. We have 2 flags in the json  response (success: false, message: error.message)
+STEP-6: EXECUTE THE FUNCTION USED AS PARAMETER 
+    - try block 
+      - try {
+        await fn(req, res, next)
+      }
+
+STEP-7: FORMATE THE ASYNCHANDLER FUNCTION INTO PROMISE 
+    - const asyncHandler = (requestHandler) => {
+        (req, res, next) => {
+          Promise.resolve(requestHandler(req, res, next)).catch((error) =>
+            next(error)
+          );
+        };
+      };
+
+**** HANDLING API ERRORS **** 
+STEP-1: CREATE FILE 
+    - utils 
+      - ApiError.js 
+STEP-2: CREATE A CLASS 
+    - ApiError.js 
+      - class ApiError extends Error {}
+STEP-3: CREATE CONSTRUCTOR 
+    - ApiError.js 
+      - constructor(
+        statusCode,
+        message = "Something went wrong",
+        errors = [],
+        stack = ""
+    ){}
+STEP-4: OVERWRITE THE FIELDS OF THE CONSTRUCTOR 
+    - {
+        super(message)
+        this.statusCode
+        this.data = null 
+        this.message = message
+        this.success = false,
+        this.errors = this.errors
+    } 
+STEP-5: CREATE CONDITION FOR STACK 
+    - if (stack) {
+        this.stack = stack;
+      } else {
+        Error.captureStackTrace(this, this.constructor);
+      }
+STEP-6: EXPORT THE API ERROR 
+    - export { ApiError };
+
+**** HANDLING API RESPONSE **** 
+STEP-1: CREATE FILE 
+    - utils 
+      - ApiResponse.js
+STEP-2: CREATE A CLASS 
+    - ApiError.js
+        - class ApiResponse {
+    
+      }
+STEP-3: CREATE CONSTRUCTOR 
+    - ApiResponse.js 
+      - constructor(statusCode, data, message = "Success") {}
+STEP-4: OVERWRITE THE FIELDS OF THE CONSTRUCTOR 
+    - {
+        this.statusCode = statusCode;
+        this.data = data;
+        this.message = message;
+        this.success = statusCode < 400;
+      }
