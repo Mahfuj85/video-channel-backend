@@ -359,3 +359,126 @@ STEP-4: OVERWRITE THE FIELDS OF THE CONSTRUCTOR
         this.message = message;
         this.success = statusCode < 400;
       }
+
+**** CREATING MODELS **** 
+    *** CREATE USER MODEL *** 
+STEP-1: CREATE FILE 
+    - models 
+      - user.model.js
+      - video.model.js 
+STEP-2: CREATE USER MODEL 
+    - user.model.js 
+STEP-3: CREATE VIDEO MODEL 
+    - video.model.js 
+STEP-4: INSTALL MONGOOSE AGRREGATE PAGINATE 
+    - Open the terminal, paste the code & press Enter 
+      - npm i mongoose-aggregate-paginate-v2 
+STEP-5: IMPORT MONGOOSE AGGREGATE PAGINATE 
+    - import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
+STEP-6: USE MONGOOSE AGGREGATE PAGINATE 
+    - videoSchema.plugin(mongooseAggregatePaginate);
+
+**** INSTALLATION OF BCRYPT & JWT 
+    - Open the terminal, paste the code & press Enter 
+      - npm i bcrypt jsonwebtoken
+
+**** USE BCRYPT **** 
+STEP-1: IMPORT BCRYPT 
+    - user.model.js 
+      - import bcrypt from "bcrypt";
+STEP-2: USE MONGOOSE HOOK 
+    - user.model.js 
+      - userSchema.pre() 
+    **Note: Pre middleware functions are executed one after another, when each middleware calls next. That means: pre is a hook which work just before execution a function. In example: when we are going to save a user, it will bcypt the password of the user just before saving. 
+STEP-3: USING THE EVENT 
+    - user.model.js 
+        - userSchema.pre() 
+            - userSchema.pre("save")
+STEP-4: USING ASYNCHRONOUS CALL BACK FUNCTION 
+    - user.model.js 
+        - userSchema.pre() 
+            - userSchema.pre("save", async function () {});
+STEP-5: PASS THE MIDDLEWARE FLAG 
+    - user.model.js 
+        - userSchema.pre() 
+            - userSchema.pre("save", async function (next) {});
+STEP-6: ENCRYPT THE PASSWORD 
+    - user.model.js 
+        - userSchema.pre() 
+            - function 
+                - this.password = bcrypt.hash(this.password, 10)
+            **Note: We need two things to hash a password. The first one is the password(this.password) and the second one is number of rounds(10).
+STEP-7: CALL NEXT 
+    - user.model.js 
+        - userSchema.pre() 
+            - function 
+                - next(); 
+    **Note: It will encrypt the password whenever you save the user. That means whenever you update the user, it will update the password also. We need to create a condition to solve the problem. 
+STEP-8: CREATE A CONDITION 
+    - user.model.js 
+        - userSchema.pre() 
+            - function 
+                - if (!this.isModified("password")) return next();
+    **Note: It will return the function if the password is not modified. If modified, it will encrypt the password.  
+STEP-9: DESIGN CUSTOM METHODS TO CHECK THE PASSWORD 
+    - user.model.js 
+      - userSchema.methods.isPasswordCorrect = async function(password){
+  
+      }
+STEP-10: COMPARE THE PASSWORD & RETURN IT 
+    - user.model.js 
+      - function 
+        - return await bcrypt.compare(password, this.password);
+    **Note: compare takes two value(String data, encrypted data)
+
+**** USING JSON WEB TOKEN **** 
+STEP-1: CREATE VARIABLE 
+    - .env 
+      - ACCESS_TOKEN_SECRET=0TUCJkahkdhhMOhabuiueb-92048YODkhapu_haneEH3jsueHKksho0
+      - ACCESS_TOKEN_EXPIRY= 1d
+      - REFRESH_TOKEN_SECRET=CKEHkjkhohd934_hskhSHJH4jkajhfdbjh-03RfjhoUOjfjhjbf0khKL
+      - REFRESH_TOKEN_EXPIRY=10d 
+    **Note: ACCESS_TOKEN_SECRET & ACCESS_TOKEN_EXPIRY wont go to the database. 
+STEP-2: IMPORT jwt
+    - user.model.js 
+      - import { jwt, sign } from "jsonwebtoken";
+STEP-3: DESIGN CUSTOM METHODS TO GENERATE ACCESS TOKEN
+    - user.model.js 
+      - userSchema.methods.generateAccessToken = function(){}
+STEP-4: GENERATE TOKEN 
+    - user.model.js 
+      - function 
+        - jwt.sign();
+STEP-5: STORE PAY LOAD  
+    - user.model.js
+      - sign
+        - {
+            _id: this._id,
+            email: this.email,
+            username: this.username,
+            fullname: this.fullname
+          }
+STEP-6: STORE ACCESS TOKEN & EXPIRY 
+    - user.model.js
+        - sign
+            - process.env.ACCESS_TOKEN_SECRET,
+            - {
+                expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
+              }
+            **Note: ACCESS_TOKEN_EXPIRY must have to be stored in an object 
+STEP-7: RETURN THE TOKEN 
+    - user.model.js
+        - return jwt.sign 
+STEP-8: DESIGN CUSTOM METHODS TO GENERATE REFRESH TOKEN
+    - user.model.js
+        - userSchema.methods.generateRefreshToken = function () {
+            return jwt.sign(
+              {
+                _id: this._id,
+              },
+              process.env.REFRESH_TOKEN_SECRET,
+              {
+                expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
+              }
+            );
+          };
