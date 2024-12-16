@@ -482,3 +482,257 @@ STEP-8: DESIGN CUSTOM METHODS TO GENERATE REFRESH TOKEN
               }
             );
           };
+
+**** USING CLOUDINARY **** 
+STEP-1: CREATE ACCOUNT WITH GOOGLE ACCOUNT 
+STEP-2: INSTALL CLOUDINARY & MULTER 
+    - npm i cloudinary
+    - npm i multer 
+STEP-3: CREATE FILE 
+    - utils 
+        - cloudinary.js
+STEP-4: IMPORT V2 & FS 
+    - cloudinary.js 
+        - import { v2 as cloudinary } from "cloudinary";
+        - import fs from "fs";
+STEP-5: USE CLOUDINARY CONFIGURATION 
+    - .env 
+        - CLOUDINARY_CLOUD_NAME=
+        - CLOUDINARY_API_KEY=
+        - CLOUDINARY_API_SECRET=
+STEP-6: USE ENV DATA INTO CLOUDINARY CONFIG 
+    - cloudinary.js
+        - cloudinary.config({
+            cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+            api_key: process.env.CLOUDINARY_API_KEY,
+            api_secret: process.env.CLOUDINARY_API_SECRET,
+          }); 
+STEP-7: CREATE A FUNCTION 
+    - cloudinary.js
+        - const uploadOnCloudinary = async (localFilePath) => {}
+STEP-8: CREATE TRY CATCH BLOCK 
+    - cloudinary.js
+        - function 
+          - try {
+        
+          } catch (error) {
+              
+          }
+STEP-9: CREATE A CONDITION & RETURN 
+    - cloudinary.js
+        - try block 
+          - if(!localFilePath) return null
+        **Note: Our files will be stored at our local storage at first. Then it will be uploaded into cloudinary database using multer. The condition means: if a file stored in local storage, it must have a local file pathname. If the file does not have any pathname, the function will return null 
+STEP-10: UPLOAD THE FILE IN CLOUDINARY 
+    - cloudinary.js
+        - try block 
+            - const response = await cloudinary.uploader.upload(
+                localFilePath, {
+                    resource_type: "auto"
+                }
+            )
+        **Note: The uploader contains two data. One is file url and other one is options. The "resource_type" may be Image, video, raw. The function will check the file type, so we use "auto". 
+STEP-11: SEND SUCCESSFUL MESSAGE 
+    - cloudinary.js
+        - try block 
+            - console.log("File uploaded successfully on cloudinary", response.url);
+STEP-12: RETURN THE RESPONSE 
+    - cloudinary.js
+        - try block 
+            - return response;
+STEP-13: REMOVE THE LOCALLY SAVED FILE & RETURN 
+    - cloudinary.js
+        - try block 
+            - fs.unlinkSync(localFilePath); 
+            - return null; 
+        **Note: This will remove the locally saved temporary file when the upload operation got failed.
+STEP-14: EXPORT THE METHOD 
+    - cloudinary.js
+        - export { uploadOnCloudinary };
+
+**** USE OF MIDDEWARE USING MULTER **** 
+STEP-1: CREATE FILE 
+    - middlewares 
+        - multer.middleware.js 
+STEP-2: IMPORT MULTER 
+    - multer.middleware.js 
+        - import multer from "multer";
+STEP-3: CREATE METHOD 
+    - multer.middleware.js
+        - const storage = multer.diskStorage({
+          destination: function (req, file, cb) {
+            cb(null, "./public/temp");
+          },
+          filename: function (req, file, cb) {
+            cb(null, file.originalname);
+          },
+        });
+        
+        - export const upload = multer({ storage });
+
+**** CREATE CONTRLLER FOR USER **** 
+STEP-1: CREATE FILE 
+    - controllers 
+        - user.controller.js
+STEP-2: IMPORT ASYNCHANDLER 
+    - user.controller.js
+        - import {asyncHandler} from "../utils/asyncHandler.js"
+STEP-3: CREATE A METHOD TO REGISTER USER 
+    - user.controller.js
+        - const registerUser = asyncHandler(async (req, res) => {
+            res.status(200).json({
+              message: "ok",
+            });
+          });
+STEP-4: EXPORT THE METHOD 
+    - user.controller.js
+        - export { registerUser };
+
+**** CREATE ROUTE FOR USER **** 
+STEP-1: CREATE FILE 
+    - routes 
+        - user.route.js 
+STEP-2: IMPORT ROUTER FROM EXPRESS 
+    - user.route.js 
+        - import { Router } from "express";
+STEP-3: CREATE "router" FROM ROUTER 
+    - user.route.js 
+        - const router = Router();
+STEP-4: EXPORT ROUTER 
+    - user.route.js 
+        - export default router;
+STEP-5: IMPORT ROUTER 
+    - app.js 
+        - import userRouter from "./routes/user.route.js" 
+STEP-6: DECLARE THE ROUTER 
+    - app.js 
+        - app.use("/users", userRouter); 
+    STANDARDIZE THE ROUTE: app.use("/api/v1/users", userRouter); 
+    The register route will be: http://localhost:8000/api/v1/users/register 
+    **Note: We use "app.use" to declare the router. We can use "app.get". When we write the routes in the same file, we can use "app.get". But we write the router in separate file. That why, we are using a middleware(app.use) to declare the router. 
+STEP-7: CREATE ROUTE FOR REGISTER 
+    - user.route.js 
+        - router.route("/register").post(registerUser); 
+    **Note: Here we got a error. The error is "Route.post() requires a callback function but got a [object Undefined]". This may be for import & export case. But our import & export function have no issue to error. Problem is in asyncHandler file. Cause, we write the asyncHandler as a higher function. But we didnt return the object. Thats why the error shows "[object Undefined]". To solve this error, er return the object of the asyncHandler function. 
+        - const asyncHandler = (requestHandler) => {import { upload } from './src/middlewares/multer.middleware';
+
+            return (req, res, next) => {
+              Promise.resolve(requestHandler(req, res, next)).catch((error) =>
+                next(error)
+              );
+            };
+          };
+
+**** REGISTER THE USER **** 
+STEP-1: GET USER DETAILS FROM FRONTEND 
+    - user.controller.js 
+        - const { username, email, fullname, password } = req.body;
+        - console.log(
+          "email: ",
+          email,
+          "username: ",
+          username,
+          "fullname: ",
+          fullname,
+          "password: ",
+          password
+        );
+    **Note: We will get user details in our cmd prompt 
+STEP-2: HANDLE FILES 
+    - user.route.js 
+    Step-1: Import upload 
+        - import { upload } from "../middlewares/multer.middleware.js";
+    Step-2: Use the upload 
+        - router.route("/register").post(
+            upload.fields([
+              {
+                name: "avatar",
+                maxCount: 1,
+              },
+              {
+                name: "coverImage",
+                maxCount: 1,
+              },
+            ]),
+            registerUser
+          );
+STEP-3: VALIDATE THE FIELDS 
+    - user.controller.js 
+        - if (
+            [fullname, email, username, password].some((field) => field?.trim() === "")
+          ) {
+            throw new ApiError(400, "All fields are required");
+          }
+        **Note: At first, we create an array with the user details. Then we use "some" method in it. Some is used instead of map. We wil get field after using some. Finally trim the field. trim is a string method that removes leading and trailing whitespace from a string. If the field after trimming are null, then throw a new Api Error message. 
+STEP-4: CHECK IF USER ALREADY EXISTS 
+    - user.controller.js 
+    Step-1: Import User 
+        - import { User } from './../models/user.model';
+    Step-2: Use findOne method on User 
+        - User.findOne()
+    Step-3: Find username or email using operator 
+        - User.findOne({
+            $or: [{ username }, { email }],
+          }); 
+        **Note: or operator will be an array. Put number of object how many value you want to check. We use two object, cause we want to check two value. 
+    Step-4: Store this method into a variable 
+        - const existedUser = User.findOne({
+            $or: [{ username }, { email }],
+          });
+    Step-5: Check existedUser if belongs or not 
+        - if(existedUser){}
+    Step-6: Throw an Error message 
+        - if(existedUser){
+            throw new ApiError(409, "User with this email or username already exists");
+          }
+STEP-5: CHECK THE AVATAR FILE & COVER IMAGE 
+    - user.controller.js 
+    Step-1: Get the avatar file path & store it in a variable 
+        - const avatarLocalPath = req.files?.avatar[0]?.path;
+        **Noter: The avatar image will come through request & it may be multiple files, thats why we use "req.files". We use first file, thats why we use "avatar[0]". 
+    Step-2: Get the coverImage file path & store it in a variable 
+        - const coverImageLocalPath = req.files?.coverImage[0]?.path;
+        **Noter: Same procedure. 
+    Step-3: Throw error message if avatarLocalPath does not exists 
+        - if (!avatarLocalPath) {
+            throw new ApiError(400, "Avatar file is required");
+          }
+STEP-6: UPLOAD AVATAR & COVER IMAGE ON CLOUDINARY 
+    - user.controller.js 
+    Step-1: Import uploadOnCloudinary 
+        - import { uploadOnCloudinary } from "../utils/cloudinary.js";
+    Step-2: Upload avatar & coverImage
+        - const avatar = await uploadOnCloudinary(avatarLocalPath);
+        - const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+    Step-3: Check avatar is exists 
+        - if (!avatar) {
+            throw new ApiError(400, "Avatar file is required");
+          } 
+STEP-7: CREATE AN OBJECT AND STORE IT IN A VARIABLE 
+    - user.controller.js 
+        - const user = await User.create({
+            fullname,
+            avatar: avatar.url,
+            coverImage: coverImage?.url || "",
+            email,
+            password,
+            username: username.toLowerCase(),
+          });
+STEP-8: REMOVE PASSWORD & REFRESH TOKEN FROM THE USER 
+    - user.controller.js 
+        - const createdUser = await user
+        .findById(user._id)
+        .select("-password -refreshToken");
+    **Note: At first, we will find the user with its id in the db. Then we will select the properties which we dont want to show and the property must be in string. 
+STEP-9: CHECK THE USER CREATED OR NOT 
+    - user.controller.js 
+        - if (!createdUser) {
+            throw new ApiError(500, "Something went wrong while registering the user");
+          }
+STEP-10: RETURN THE RESPONSE 
+    - user.controller.js 
+        - return res
+        .status(201)
+        .json(new ApiResponse(200, createdUser, "User registered successfully"));
+    
+
