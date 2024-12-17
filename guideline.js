@@ -781,4 +781,158 @@ STEP-8: CREATE A REGISTER
         - Click on form-data 
             - Add Key & Value 
     
+**** LOGIN THE USER **** 
+STEP-1: CREATE A FUNCTION WITH ASYNC HANDLER 
+    - user.controller.js 
+        - const loginUser = asyncHandler(async(req, res) => {})
+STEP-2: EXPORT THE FUNCTION 
+    - user.controller.js 
+        - export { registerUser, loginUser };
+STEP-3: GET THE DATA FROM REQ BODY 
+    - user.controller.js 
+        - const { email, username, password } = req.body;
+STEP-4: CHECK IF USERNAME OR EMAIL IS COMING 
+    - if (!username || !email) {
+        throw new ApiError(400, "username or email is required")
+      }
+STEP-5: FIND THE USER ON DB 
+    - const user = await User.findOne({
+        $or: [{username}, {email}]
+      })
+STEP-6: CHECK THE USER EXISTS 
+    - if (!user) {
+        throw new ApiError(404, "User does not exist")
+      }
+STEP-7: CHECK THE PASSWORD 
+    - const isPasswordValid = await user.isPasswordCorrect(password); 
+STEP-8: THROW AN ERROR IF PASSWORD DOES NOT MATCH 
+    - if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid user credentials")
+      }
+STEP-9: CREATE A METHOD TO GENERATE ACCESS AND REFRESH TOKEN 
+    Step-1: Create a async function 
+      - const generateAccessAndRefreshToken = async (userId) => {}
+    Step-2: Create try-catch block and throw error message 
+      - try {
+    } catch (error) {
+      throw new ApiError(
+        500,
+        "Something went wrong while generating refresh and access token"
+      );
+    }
+    Step-3: Find the user 
+        - try block     
+            - const user = await User.findById(userId);
+    Step-4: Generate access and refresh token 
+        - try block 
+            - const accessToken = user.generateAccessToken();
+            - const refreshToken = user.generateRefreshToken();
+    Step-5: Store the refreshToken into refreshToken of db 
+        - try block 
+            - user.refreshToken = refreshToken;
+    Step-6: Save the user on db 
+        - try block 
+            - await user.save({validateBeforeSave: false})
+        **Note: It will give a command to save the user without any validation. 
+    Step-7: Return the tokens 
+        - return { accessToken, refreshToken }; 
+STEP-10: GET ACCESS AND REFRESH TOKEN 
+    - loginUser function 
+        - const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+            user._id
+          );
+STEP-11: SEND COOKIE 
+    Step-1: Select the data that want to send the user 
+        - const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+    Step-2: Create options
+        - const options = {
+            httpOnly: true,
+            secure: true,
+          };
+        **Note: It helps the cookie to modify only from server, not from frontend 
+    Step-3: Return a response 
+        - return res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+          new ApiResponse(
+            200,
+            {
+              user: loggedInUser,
+              accessToken,
+              refreshToken,
+            },
+            "User Logged In Successfully"
+          )
+        );
+STEP-12: CREATE ROUTE FOR LOGIN 
+    - user.route.js 
+        - router.route("/login").post(loginUser); 
 
+**** CREATE A MIDDLEWARE **** 
+It will check if user logged in or not. When we logged in an user, we give him an access token and refresh token. We verify the user if he has the right token in the basis of the token. If he has the right token, he is the true logged in. If he has the true logged in, we add an new object under the request(req.user). 
+STEP-1: CREATE A FILE 
+    - middleware 
+        - auth.middleware.js 
+STEP-2: CREATE METHOD 
+    - auth.middleware.js
+        - export const verifyJWT = asyncHandler(async(req, res, next) => {})
+STEP-3: IMPORT ASYNCHANDLER 
+    - import { asyncHandler } from "../utils/asyncHandler.js";
+STEP-4: GET THE ACCESS TOKEN 
+    - const token =
+    req.cookies?.accessToken ||
+    req.header("Authorization")?.replace("Bearer ", "");
+STEP-5: THROW ERROR MESSAGE 
+    - if (!token) {
+        throw new ApiError(401, "Unauthorized request");
+      }
+STEP-6: GET THE JWT 
+    - const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+STEP-7: FIND THE USER ON DB 
+    - const user = await User.findById(decodedToken?._id).select(
+        "-password -refreshToken"
+      );
+    **Note: _id is coming from the jwt method of user model 
+STEP-8: THROW AN ERROR MESSAGE 
+    - if (!user) {
+        throw new ApiError(401, "Invalid Access Token");
+      } 
+    **Note: 
+STEP-9: ADD THE USER ON REQUEST AND CALL THE NEXT 
+    - req.user = user;
+    - next();
+
+**** LOG OUT THE USER **** 
+STEP-1: CREATE A METHOD 
+    - user.controller.js 
+      - const logoutUser = asyncHandler(async (req, res) => {});
+STEP-2: UPDATE THE REFRESH TOKEN 
+    - await User.findByIdAndUpdate(
+        req.user._id,
+        {
+          $set: {
+            refreshToken: Undefined,
+          },
+        },
+        {
+          new: true,
+        }
+      ); 
+STEP-3: SET UP OPTIONS 
+    - const options = {
+        httpOnly: true,
+        secure: true,
+      }; 
+STEP-4: RETURN THE RESPONSE 
+    - return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "User logged Out Successfully"));
+STEP-5: CREATE ROUTE FOR LOGOUT 
+    - user.route.js 
+        - router.route("/logout").post(verifyJWT, logoutUser);
+
+**Note: Sometimes we will find that req & next are being used, but res is not being used. In that case we can write "_" instead of res. 
