@@ -735,4 +735,50 @@ STEP-10: RETURN THE RESPONSE
         .status(201)
         .json(new ApiResponse(200, createdUser, "User registered successfully"));
     
+STEP-11: REMOVE FILES FROM CLOUDINARY 
+    - cloudinary.js 
+        - try block 
+          - comment the console 
+          - fs.unlinkSync(localFilePath);
+        **Note: It will help to remove the files if it uploaded successfully or failed in the future. 
+
+**** CREATE COLLECTION ON POSTMAN **** 
+STEP-1: CREATE COLLECTION 
+    - Click on Collection from left side menu 
+        - Click on plus(+) icon 
+          - Click on Blank collection 
+            - Rewrite the collection name(Videotube) on New Collection 
+STEP-2: ADD A REQUEST 
+    - Click on "Add a request" 
+        - Rewrite the request name(register) on New Request 
+          - Click on Save button 
+STEP-3: CREATE FOLDER IN VIDEOTUBE 
+    - Click on down arrow after Save button 
+        - Click on Save as 
+          - Click on Videotube 
+            - Click on New Folder 
+                - Write the folder name(users) and click on Create 
+                    - Click on Save 
+        - Now delete the previous "register" request 
+STEP-4: CREATE AN ENVIRONMENT  
+    - Click on Environments from left side menu 
+        - Click on plus(+) icon 
+          - Rewrite the variable name(Videotube) on New Environment  
+STEP-5: ADD AN ENVIRONMENT 
+    - Fill up the form on Videotube environment 
+        - Write variable name(server) on "Variable"
+        - Paste the url code(http://localhost:8000/api/v1) on Initial value & Current vale 
+        - Click on Save button 
+STEP-6: LINK UP THE ENVIRONMENT 
+    - Click on the down arrow after No environment 
+        - Click on Videotube 
+STEP-7: USE THE ENVIRONMENT ON THE COLLECTION 
+    - Click on register collection 
+        - Delete the v1 part of the url 
+            - Type two curly bracket({{), server option will be seen, press on it 
+STEP-8: CREATE A REGISTER 
+    - Click on Body 
+        - Click on form-data 
+            - Add Key & Value 
+    
 
