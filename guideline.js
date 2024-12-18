@@ -441,7 +441,7 @@ STEP-1: CREATE VARIABLE
     **Note: ACCESS_TOKEN_SECRET & ACCESS_TOKEN_EXPIRY wont go to the database. 
 STEP-2: IMPORT jwt
     - user.model.js 
-      - import { jwt, sign } from "jsonwebtoken";
+      - import jwt from "jsonwebtoken";
 STEP-3: DESIGN CUSTOM METHODS TO GENERATE ACCESS TOKEN
     - user.model.js 
       - userSchema.methods.generateAccessToken = function(){}
@@ -913,7 +913,7 @@ STEP-2: UPDATE THE REFRESH TOKEN
         req.user._id,
         {
           $set: {
-            refreshToken: Undefined,
+            refreshToken: undefined,
           },
         },
         {
@@ -936,3 +936,55 @@ STEP-5: CREATE ROUTE FOR LOGOUT
         - router.route("/logout").post(verifyJWT, logoutUser);
 
 **Note: Sometimes we will find that req & next are being used, but res is not being used. In that case we can write "_" instead of res. 
+
+**** CREATE AN END POINT WHERE USER CAN REFRESH HIS ACCESS TOKEN **** 
+STEP-1: CREATE A METHOD 
+    - user.controller.js 
+      - const refreshAccessToken = asyncHandler(async(req, res)=> {})
+STEP-2: ACCESS THE REFRESH TOKEN 
+    - const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
+STEP-3: THROW AN ERROR MESSAGE 
+    - if (!incomingRefreshToken) {
+        throw new ApiError(401, "Unauthorized request");
+      } 
+STEP-4: VERIFY THE INCOMING REFRESH TOKEN WITH OUR DB REFRESH TOKEN 
+    - const decodedToken = jwt.verify(
+        incomingRefreshToken,
+        process.env.REFRESH_TOKEN_SECRET
+      );
+STEP-5: ACCESS THE USER FROM DB 
+    - const user = await User.findById(decodedToken?._id);
+STEP-6: THROW AN ERROR MESSAGE 
+    - if (!user) {
+        throw new ApiError(401, "Invalid refresh token");
+      }
+STEP-7: MATCH THE INCOMING REFRESH TOKEN WITH USERS REFRESH TOKEN AND THROW AN ERROR 
+    - if (incomingRefreshToken !== user?.refreshToken) {
+        throw new ApiError(401, "Refresh token is expired or used");
+      }
+STEP-8: CREATE OPTIONS 
+    - const options = {
+        httpOnly: true,
+        secure: true,
+      };
+STEP-9: GENERATE TOKENS 
+    - const { accessToken, newRefreshToken } = await generateAccessAndRefreshToken(
+        user._id
+      );
+STEP-10: SEND RESPONSE 
+    - return res
+    .status(200)
+    .clearCookie("accessToken", accessToken, options)
+    .clearCookie("refreshToken", newRefreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        { accessToken, refreshToken: newRefreshToken },
+        "Access token refreshed successfully"
+      )
+    );
+STEP-11: EXPORT REFRESH ACCESS TOKEN 
+    - export { registerUser, loginUser, logoutUser, refreshAccessToken };
+STEP-12: CREATE ROUTE FOR REFRESH ACCESS TOKEN 
+    - user.route.js 
+        - router.route("/refresh-token").post(refreshAccessToken);
