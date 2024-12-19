@@ -988,3 +988,24 @@ STEP-11: EXPORT REFRESH ACCESS TOKEN
 STEP-12: CREATE ROUTE FOR REFRESH ACCESS TOKEN 
     - user.route.js 
         - router.route("/refresh-token").post(refreshAccessToken);
+
+**** CREATE MODEL FOR SUBSCRIPTION **** 
+STEP-1: CREATE FILE 
+    - models 
+        - subscription.model.js
+STEP-2: IMPORT MONGOOSE & SCHEMA  
+    - import mongoose, {Schema} from "mongoose";
+STEP-3: CREATE MODEL 
+    - const subscriptionSchema = new Schema({}, {timestamps: true})
+STEP-4: CREATE OBJECT 
+    - subscriber: {
+        type: Schema.Types.ObjectId, // one who is subscribing
+        ref: "User",
+      },
+    - channel: {
+        type: Schema.Types.ObjectId,  // one to whom 'subscriber' is subscribing 
+        ref: "User",
+      },
+STEP-5: EXPORT THE SCHEMA 
+    - export const Subscription = mongoose.model("Subscription", subscriptionSchema);
+
