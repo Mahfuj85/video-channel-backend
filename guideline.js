@@ -1009,3 +1009,98 @@ STEP-4: CREATE OBJECT
 STEP-5: EXPORT THE SCHEMA 
     - export const Subscription = mongoose.model("Subscription", subscriptionSchema);
 
+**** CREATE METHOD TO CHANGE PASSWORD **** 
+    - user.controller.js 
+STEP-1: CREATE METHOD 
+    - const changeCurrentPassword = asyncHandler(async(req, res) => {})
+STEP-2: ACCESS INFORMATION FROM BODY 
+    - const { oldPassword, newPassword } = req.body;
+STEP-3: GET THE USER FROM DB 
+    - const user = await User.findById(req.user?._id)
+STEP-4: CHECK THE PASSWORD IF CORRECT OR NOT 
+    - const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+STEP-5: THROW ERROR MESSAGE 
+    - if (!isPasswordCorrect) {
+        throw new ApiError(400, "Invalid old password");
+      }
+STEP-6: SET NEW PASSWORD AND SAVE IT 
+    - user.password = newPassword
+    - await user.save({validateBeforeSave: false})
+STEP-7: SEND RESPONSE 
+    - return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password changed successfully"));
+STEP-8: EXPORT THE METHOD
+
+**** GET THE CURRENT USER **** 
+    - user.controller.js 
+STEP-1: CREATE METHOD 
+    - const getCurrentUser = asyncHandler(async(req, res)=> {})
+STEP-2: SEND THE RESPONSE 
+    - return res
+    .status(200)
+    .json(200, req.user, "Current user fetched successfully");
+STEP-3: EXPORT THE METHOD
+
+**** UPDATE ACCOUNT DETAILS **** 
+    - user.controller.js 
+STEP-1: CREATE METHOD 
+    - const updateAccountDetails = asyncHandler(async(req, res)=> {})
+STEP-2: ACCESS THE INFO 
+    - const { fullname, email } = req.body;
+STEP-3: THROW ERROR MESSAGE 
+    - if (!fullname || !email) {
+        throw new ApiError(400, "All fields are required");
+      }
+STEP-4: FIND THE USER AND UPDATE 
+    - const user = User.findByIdAndUpdate(
+        req.user?._id,
+        {
+          $set: {
+            fullname,
+            email,
+          },
+        },
+        { new: true }
+      ).select("-password");
+STEP-5: SEND THE RESPONSE 
+    - return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Account details updated successfully")); 
+STEP-6: EXPORT THE METHOD 
+
+**** UPDATE FILE **** 
+    - user.controller.js 
+STEP-1: CREATE METHOD 
+    - const updateUserAvatar = asyncHandler(async(req, res)=> {})
+STEP-2: ACCESS THE FILE 
+    - const avatarLocalPath = req.file?.path;
+STEP-3: THROW ERROR MESSAGE 
+    - if (!avatarLocalPath) {
+        throw new ApiError(400, "Avatar file is missing");
+      }
+STEP-4: UPLOAD THE FILE IN CLOUDINARY 
+    - const avatar = await uploadOnCloudinary(avatarLocalPath);
+STEP-5: SEND ERROR MESSAGE ON UPLOADING 
+    - if (!avatar.url) {
+        throw new ApiError(400, "Error while uploading on avatar");
+      } 
+STEP-6: FIND THE USER AND UPDATE 
+    - const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+          $set: {
+            avatar: avatar.url,
+          },
+        },
+        {
+          new: true,
+        }
+      ).select("-password");
+STEP-7: SEND THE RESPONSE 
+    - return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Avatar updated successfully"));
+STEP-8: EXPORT THE METHOD 
+
+**** UPDATE COVER IMAGE SAME AS AVATAR 
