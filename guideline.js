@@ -1104,3 +1104,40 @@ STEP-7: SEND THE RESPONSE
 STEP-8: EXPORT THE METHOD 
 
 **** UPDATE COVER IMAGE SAME AS AVATAR 
+
+**** GET CHANNEL PROFILE OF AN USER **** 
+    - user.controller.js 
+STEP-1: CREATE A METHOD 
+    - const getUserChannelProfile = asyncHandler(async(req, res)=> {})
+STEP-2: GET THE USER NAME FROM URL 
+    - const { username } = req.params;
+STEP-3: CHECK IF THE USER NAME EXIST
+    - if (!username?.trim()) {
+        throw new ApiError(400, "username is missing");
+      }
+STEP-4: AGGREGATE THE USER 
+    - const channel = await User.aggregate([]);
+STEP-5: CREATE PIPELINE 
+    - 
+STEP-6: CHECK CHANNEL LENGTH 
+    - if (!channel?.length) {
+        throw new ApiError(404, "Channel does not exist")
+      }
+STEP-7: RETURN RESPONSE 
+    - return res
+    .status(200)
+    .json(
+      new ApiResponse(200, channel[0], "User channel fetched successfully")
+    );
+
+
+**** GET USERS WATCH HISTORY **** 
+    - user.controller.js 
+STEP-1: CREATE A METHOD 
+    - const getWatchHistory = asyncHandler(async(req, res)=> {})
+STEP-2: AGGREGATE THE USER
+    -  const user = await User.aggregate([]);
+STEP-3: CREATE PIPELINE 
+    - 
+STEP-4: RETURN RESPONSE 
+    - 
